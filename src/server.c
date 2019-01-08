@@ -22,8 +22,25 @@
 #include <arpa/inet.h>
 #include <stdbool.h>
 #include <wait.h>
+#include <assert.h>
 
 #define MAX_CMD_SZ  (1024)
+
+struct client
+{
+	int fd;
+	struct sockaddr_in addr;
+};
+
+typedef struct client clients_t[FT_P_LISTEN_QUEUE];
+
+struct client *client_find(clients_t clients, int fd)
+{
+	unsigned i;
+
+	for (i = 0; i < FT_P_LISTEN_QUEUE && clients[i].fd != fd; ++i);
+	return i == FT_P_LISTEN_QUEUE ? NULL : clients + i;
+}
 
 int main(int ac, char *av[])
 {
@@ -63,6 +80,8 @@ int main(int ac, char *av[])
 
 	fd_set rfds;
 
+	clients_t clients = { };
+
 	FD_ZERO(&rfds);
 
 	FD_SET(STDIN_FILENO, &rfds);
@@ -76,43 +95,66 @@ int main(int ac, char *av[])
 		int const err = select(FD_SETSIZE, &_rfds, NULL, NULL, NULL);
 		if (err < 0) goto abort;
 
-		for (int fd = 0; fd < FD_SETSIZE; ++fd) {
-			if (!FD_ISSET(fd, &_rfds)) continue;
+		if (FD_ISSET(sock, &_rfds)) {
+			socklen_t sz = sizeof(struct sockaddr_in);
+			struct client *cli = client_find(clients, 0);
+			assert(cli);
 
-			if (fd == sock) {
-				struct sockaddr_in addr;
-				socklen_t sz = sizeof(struct sockaddr_in);
+			cli->fd = accept(sock, (struct sockaddr *)&cli->addr, &sz);
+			FD_SET(cli->fd, &rfds);
 
-				int const client = accept(sock, (struct sockaddr *) &addr, &sz);
-				FD_SET(client, &rfds);
+			ft_printf("accepted new connection %s\n",
+			          inet_ntoa(cli->addr.sin_addr));
+		}
 
-				ft_printf("accepted new connection %s\n",
-				          inet_ntoa(addr.sin_addr));
+		if (FD_ISSET(STDIN_FILENO, &_rfds)) {
+			ssize_t const rd = read(STDIN_FILENO, cmd, sizeof cmd);
+			if (rd < 0) goto abort;
+
+			cmd[rd] = '\0';
+
+			if (ft_strcmp("quit\n", cmd) == 0) {
+				ft_printf("quit !\n");
+				goto success;
 			}
-			else if (fd == STDIN_FILENO) {
-				ssize_t const rd = read(fd, cmd, sizeof cmd);
-				if (rd < 0) goto abort;
 
-				if (ft_strncmp("q", cmd, 1) == 0) {
-					ft_printf("quit !\n");
-					goto success;
-				}
+			ft_printf("server: unknown command: %s", cmd);
+		}
 
-				ft_printf("%.*s\n", (unsigned)rd, cmd);
+		for (struct client *cli = clients;
+		     cli != clients + FT_P_LISTEN_QUEUE; ++cli) {
+
+			if (!cli->fd || !FD_ISSET(cli->fd, &_rfds))
+				continue;
+
+			ssize_t const rd = recv(cli->fd, cmd, sizeof cmd, 0);
+			if (rd < 0) {
+				FD_CLR(cli->fd, &rfds);
+
+				ft_fprintf(g_stderr, "connection error %s: %s\n",
+				           cli->fd, inet_ntoa(cli->addr.sin_addr),
+				           ft_strerror(errno));
+
+				close(cli->fd);
+				cli->fd = 0;
+				continue;
 			}
-			else {
-				ssize_t const rd = recv(fd, cmd, sizeof cmd, 0);
-				if (rd < 0) {
-					FD_CLR(fd, &rfds);
 
-					ft_fprintf(g_stderr, "client error %d: %s\n",
-					           fd, ft_strerror(errno));
-					close(fd);
-					continue;
-				}
+			cmd[rd] = '\0';
 
-				ft_printf("%.*s", (unsigned)rd, cmd);
+			if (ft_strcmp("quit\n", cmd) == 0) {
+				FD_CLR(cli->fd, &rfds);
+
+				ft_fprintf(g_stderr, "connection terminated %s\n",
+				           inet_ntoa(cli->addr.sin_addr));
+
+				close(cli->fd);
+				cli->fd = 0;
+				continue;
 			}
+
+			/* TODO: implement a fucking shell in a networking project.. */
+			ft_printf("%s", cmd);
 		}
 	}
 
