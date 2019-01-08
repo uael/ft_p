@@ -14,6 +14,9 @@ ifeq (,$(OUTLIB_DIR))
   $(error Must precise OUTLIB_DIR)
 endif
 
+# Configuration
+FT_P_LISTEN_QUEUE := 6
+
 LIBFT_ROOT_DIR := libft
 include $(LIBFT_ROOT_DIR)/makefile.mk
 include src/makefile.mk

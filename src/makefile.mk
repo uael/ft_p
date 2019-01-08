@@ -1,5 +1,7 @@
 SERVER_OBJ += src/server.o
 
+$(call set_config,src/server.o,FT_P_LISTEN_QUEUE)
+
 $(eval $(call target_bin,server,SERVER_OBJ,SERVER_BIN))
 $(SERVER_BIN): $(LIBFT_LIB)
 $(SERVER_BIN): CFLAGS  +=  $(LIBFT_CFLAGS)
