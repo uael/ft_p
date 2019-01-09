@@ -10,21 +10,22 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "ush.h"
+
 #include <ft/opts.h>
 #include <ft/stdio.h>
 #include <ft/stdlib.h>
 
-#include <errno.h>
-#include <stdlib.h>
-
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <stdbool.h>
-#include <wait.h>
 #include <assert.h>
+#include <errno.h>
+#include <limits.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <wait.h>
 
-#define MAX_CMD_SZ  (1024)
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
 
 struct client
 {
@@ -41,6 +42,17 @@ struct client *client_find(clients_t clients, int fd)
 	for (i = 0; i < FT_P_LISTEN_QUEUE && clients[i].fd != fd; ++i);
 	return i == FT_P_LISTEN_QUEUE ? NULL : clients + i;
 }
+
+int server_ls(int sock, int ac, char *av[], void *user);
+int server_cd(int sock, int ac, char *av[], void *user);
+int server_pwd(int sock, int ac, char *av[], void *user);
+
+static const struct ush_bi server_builtins[] = {
+	{ "ls",  server_ls  },
+	{ "cd",  server_cd  },
+	{ "pwd", server_pwd },
+	{ NULL, NULL },
+};
 
 int main(int ac, char *av[])
 {
@@ -78,8 +90,12 @@ int main(int ac, char *av[])
 	if (listen(sock, FT_P_LISTEN_QUEUE))
 		goto abort;
 
-	fd_set rfds;
+	char root[PATH_MAX];
 
+	if (getcwd(root, PATH_MAX) == NULL)
+		goto abort;
+
+	fd_set rfds;
 	clients_t clients = { };
 
 	FD_ZERO(&rfds);
@@ -88,7 +104,7 @@ int main(int ac, char *av[])
 	FD_SET(sock, &rfds);
 
 	while (true) {
-		char cmd[MAX_CMD_SZ];
+		char cmd[USH_ARG_MAX];
 
 		fd_set _rfds = rfds;
 
@@ -153,8 +169,7 @@ int main(int ac, char *av[])
 				continue;
 			}
 
-			/* TODO: implement a fucking shell in a networking project.. */
-			ft_printf("%s", cmd);
+			ush_eval(cli->fd, cmd, server_builtins, root);
 		}
 	}
 

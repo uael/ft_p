@@ -1,7 +1,7 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft/stdlib.h                                        :+:      :+:    :+:   */
+/*   server/ls.c                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: alucas- <alucas-@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
@@ -10,21 +10,16 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef FT_STDLIB_H
-# define FT_STDLIB_H
+#include "ush.h"
 
-# include "ft/cdefs.h"
+#include <ft/string.h>
 
-typedef int			t_ncmp(const void *a, const void *b, size_t n);
+int server_ls(int sock, int ac, char *av[], void *user)
+{
+	av[0] = "/bin/ls";
 
-extern int			ft_abs(int a);
-extern int			ft_atoi(const char *s);
-extern long			ft_atol(const char *s);
-extern long long	ft_atoll(const char *s);
-extern char			*ft_itoa(int nb);
-extern int			ft_wctomb(char *s, wchar_t wc);
-extern void		    ft_qsort(void *base, size_t nel, size_t width, t_ncmp *cmp);
-extern char			*ft_realpath(char const *path, char *res, char *to);
-extern char			*ft_strerror(int eno);
+	/* Sanitize client input (only accept options) */
+	for (int i = 1; i < ac; ++i) if (*av[i] != '-') av[i] = "";
 
-#endif
+	return ush_system(sock, ac, av, user);
+}

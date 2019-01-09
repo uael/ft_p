@@ -1,7 +1,7 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft/stdlib.h                                        :+:      :+:    :+:   */
+/*   server/pwd.c                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: alucas- <alucas-@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
@@ -10,21 +10,36 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef FT_STDLIB_H
-# define FT_STDLIB_H
+#include "ush.h"
 
-# include "ft/cdefs.h"
+#include <ft/stdio.h>
+#include <ft/stdlib.h>
+#include <ft/string.h>
 
-typedef int			t_ncmp(const void *a, const void *b, size_t n);
+#include <assert.h>
+#include <errno.h>
+#include <limits.h>
+#include <unistd.h>
 
-extern int			ft_abs(int a);
-extern int			ft_atoi(const char *s);
-extern long			ft_atol(const char *s);
-extern long long	ft_atoll(const char *s);
-extern char			*ft_itoa(int nb);
-extern int			ft_wctomb(char *s, wchar_t wc);
-extern void		    ft_qsort(void *base, size_t nel, size_t width, t_ncmp *cmp);
-extern char			*ft_realpath(char const *path, char *res, char *to);
-extern char			*ft_strerror(int eno);
+int server_pwd(int sock, int ac, char *av[], void *user)
+{
+	(void)av;
+	char const *const root = user;
 
-#endif
+	if (ac != 1) {
+		ft_dprintf(sock, "Usage: pwd\n Print current working directory\n");
+		return 1;
+	}
+
+	char cwd[PATH_MAX];
+
+	if (getcwd(cwd, sizeof cwd) == NULL) return -1;
+
+	size_t const root_len = ft_strlen(root);
+	size_t const cwd_len  = ft_strlen(cwd);
+
+	if (cwd_len <= root_len)
+		return ft_dprintf(sock, "/\n");
+
+	return ft_dprintf(sock, "%s\n", cwd + root_len);
+}

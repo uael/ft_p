@@ -1,4 +1,7 @@
-SERVER_OBJ += src/server.o
+SERVER_OBJ += src/ush.o src/server.o \
+              src/server/ls.o \
+              src/server/cd.o \
+              src/server/pwd.o
 
 $(call set_config,src/server.o,FT_P_LISTEN_QUEUE)
 
@@ -7,7 +10,7 @@ $(SERVER_BIN): $(LIBFT_LIB)
 $(SERVER_BIN): CFLAGS  +=  $(LIBFT_CFLAGS)
 $(SERVER_BIN): INCLUDE +=  src
 
-CLIENT_OBJ += src/client.o
+CLIENT_OBJ += src/ush.o src/client.o
 
 $(eval $(call target_bin,client,CLIENT_OBJ,CLIENT_BIN))
 $(CLIENT_BIN): $(LIBFT_LIB)

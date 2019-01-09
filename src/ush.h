@@ -1,7 +1,7 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft/stdlib.h                                        :+:      :+:    :+:   */
+/*   ush.h                                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: alucas- <alucas-@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
@@ -10,21 +10,25 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef FT_STDLIB_H
-# define FT_STDLIB_H
+/**
+ * @file ush.h
+ * @brief
+ * Micro-shell command line interpreter for remote (thought socket)
+ * execution
+ */
+#ifndef __USH_H
+# define __USH_H
 
-# include "ft/cdefs.h"
+#define USH_ARG_MAX   (1024) /**< Maximum size of a full argument */
+#define USH_ARGS_MAX  ( 128) /**< Maximum number of argumnets     */
 
-typedef int			t_ncmp(const void *a, const void *b, size_t n);
+struct ush_bi
+{
+	char const *name;
+	int (*eval)(int sock, int ac, char *av[], void *user);
+};
 
-extern int			ft_abs(int a);
-extern int			ft_atoi(const char *s);
-extern long			ft_atol(const char *s);
-extern long long	ft_atoll(const char *s);
-extern char			*ft_itoa(int nb);
-extern int			ft_wctomb(char *s, wchar_t wc);
-extern void		    ft_qsort(void *base, size_t nel, size_t width, t_ncmp *cmp);
-extern char			*ft_realpath(char const *path, char *res, char *to);
-extern char			*ft_strerror(int eno);
+int ush_system(int sock, int ac, char *av[], void *user);
+int ush_eval(int sock, char *cmd, struct ush_bi const *builtins, void *user);
 
-#endif
+#endif /* !__USH_H */
