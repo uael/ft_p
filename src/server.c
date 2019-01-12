@@ -58,7 +58,7 @@ int main(int ac, char *av[])
 {
 	if (ac != 2) {
 		ft_fprintf(g_stderr, "Usage %s [port]\n Open a server\n",
-		           av[0], ft_strerror(errno));
+		           av[0]);
 		return EXIT_FAILURE;
 	}
 
@@ -148,8 +148,8 @@ int main(int ac, char *av[])
 				FD_CLR(cli->fd, &rfds);
 
 				ft_fprintf(g_stderr, "connection error %s: %s\n",
-				           cli->fd, inet_ntoa(cli->addr.sin_addr),
-				           ft_strerror(errno));
+						   inet_ntoa(cli->addr.sin_addr),
+						   ft_strerror(errno));
 
 				close(cli->fd);
 				cli->fd = 0;
