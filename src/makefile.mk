@@ -1,4 +1,4 @@
-SERVER_OBJ += src/ush.o src/server.o \
+SERVER_OBJ += src/ftp.o src/ush.o src/server.o \
               src/server/ls.o \
               src/server/cd.o \
               src/server/pwd.o

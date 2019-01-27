@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "ush.h"
+#include "ftp.h"
 
 #include <ft/opts.h>
 #include <ft/stdio.h>
