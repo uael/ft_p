@@ -15,6 +15,7 @@
 
 #include <fsm.h>
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -64,6 +65,8 @@ typedef struct ftp_cli {
 	struct sockaddr_in addr;
 	struct timeval timeout;
 	fsm_t fsm;
+	struct ftp_usr *user;
+	bool login;
 } ftp_cli_t;
 
 typedef struct ftp_srv {

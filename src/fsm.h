@@ -36,9 +36,7 @@
 #define FSM_E_DEFAULT  (-1)
 
 typedef struct fsm fsm_t;
-
-typedef int (fsm_act_t  )(fsm_t const *, int ecode, void *arg);
-typedef int (fsm_catch_t)(fsm_t const *, int err);
+typedef int fsm_act_t(fsm_t const *, int ecode, void *arg);
 
 /**
  * Finite state machine transition definition
@@ -59,9 +57,7 @@ struct fsm_trans {
  */
 struct fsm {
 	struct fsm_trans const *const *stt; /**< Transition table for each state */
-
-	fsm_catch_t *cth; /**< Call-back on transition `act` negative return */
-	int state;        /**< Current state                                 */
+	int state;                          /**< Current state                   */
 };
 
 /**
@@ -77,28 +73,6 @@ static __always_inline void fsm_init(struct fsm *fsm, int initial,
 }
 
 /**
- * Set the finite state machine catch call-back
- * @note
- * This call-back will be called on every transition `act` negative return
- * @param fsm  [in,out] FSM targeted
- * @param cth      [in] Catch call-back
- */
-static __always_inline void fsm_catch(struct fsm *fsm, fsm_catch_t *cth)
-{
-	fsm->cth = cth;
-}
-
-/**
- * Retrieve the state of `fsm` finite state machine
- * @param fsm  [in] The FSM targeted
- * @return          FSM current state
- */
-static __always_inline int fsm_state(struct fsm const *fsm)
-{
-	return fsm->state;
-}
-
-/**
  * Trigger an event in the finite state machine
  * @param fsm  [in,out] FSM targeted
  * @param ecode    [in] Related event code
@@ -110,8 +84,7 @@ static __always_inline int fsm_trigger(struct fsm *fsm, int ecode, void *arg)
 	/* Sanitize input */
 	assert(ecode >= 0);
 
-	/* Get the state-machine targeted by the event, and select
-	 * the transition table of the current state.
+	/* Select the transition table of the current state.
 	 * Then process to the transition...
 	 * Which can post a condition to the transition... */
 	const struct fsm_trans *trans = fsm->stt[fsm->state];
@@ -119,20 +92,10 @@ static __always_inline int fsm_trigger(struct fsm *fsm, int ecode, void *arg)
 	do {
 		for (; trans->ecode != ecode &&
 		       trans->ecode != FSM_E_DEFAULT; ++trans);
+		ecode = trans->act ? trans->act(fsm, ecode, arg) : 0;
 
-		if (!trans->act) ecode = 0;
-		else {
-
-			/* Sanitize input */
-			assert(fsm->stt);
-
-			/* The action return an error, if there is a catch call-back
-			 * registered if this FSM, transmit error code and let
-			 * him choose if we continue of not */
-			if ((ecode = trans->act(fsm, ecode, arg)) < 0 && fsm->cth)
-				ecode = fsm->cth(fsm, ecode);
-		}
-
+		/* Sanity check */
+		assert(fsm->stt);
 	} while (ecode > 0);
 
 	return (fsm->state = trans->next_state), ecode;
